@@ -19,9 +19,32 @@ router.get("/login", function (req, res) {
 
 router.post("/signup", async function (req, res) {
   const { email, password } = req.body;
-  const confirmPassword = req.body["confirm-email"];
-  const hashedPassword = await bcrypt.hash(password, 12);
+  const confirmEmail = req.body["confirm-email"];
 
+  console.log(password < 6);
+
+  if (
+    !email ||
+    !password ||
+    !confirmEmail ||
+    password.trim() < 6 ||
+    email !== confirmEmail ||
+    !confirmEmail.includes("@")
+  ) {
+    return res.redirect("/signup");
+  }
+
+  const existingUser = await db
+    .getDb()
+    .collection("users")
+    .findOne({ email: email });
+
+  if (existingUser) {
+    console.log("user exists");
+
+    return res.redirect("/signup");
+  }
+  const hashedPassword = await bcrypt.hash(password, 12);
   const user = { email, password: hashedPassword };
 
   await db.getDb().collection("users").insertOne(user);
@@ -49,7 +72,7 @@ router.post("/login", async function (req, res) {
   }
 
   console.log("user found");
-  res.redirect('/admin')
+  res.redirect("/admin");
 });
 
 router.get("/admin", function (req, res) {
