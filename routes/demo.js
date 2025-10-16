@@ -70,15 +70,31 @@ router.post("/login", async function (req, res) {
     console.log("password didn't matched");
     return res.redirect("/login");
   }
+  console.log("existingUser._id.toString()", existingUser._id.toString());
+  console.log("existingUser", existingUser._id);
 
-  console.log("user found");
-  res.redirect("/admin");
+  req.session.user = {
+    id: existingUser._id.toString(),
+    email: existingUser.email,
+  };
+  req.session.isAuthenticated = true;
+
+  req.session.save(function () {
+    res.redirect("/admin");
+  });
 });
 
 router.get("/admin", function (req, res) {
+  if (!req.session.isAuthenticated) {
+    return res.status(401).render("401");
+  }
   res.render("admin");
 });
 
-router.post("/logout", function (req, res) {});
+router.post("/logout", function (req, res) {
+  req.session.user = null;
+  req.session.isAuthenticated = false;
+  res.redirect("/");
+});
 
 module.exports = router;
