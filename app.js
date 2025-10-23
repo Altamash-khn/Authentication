@@ -7,6 +7,7 @@ const mongodbStore = require("connect-mongodb-session");
 const db = require("./data/database");
 const MongoDBStore = mongodbStore(session);
 const demoRoutes = require("./routes/demo");
+const { ObjectId } = require("mongodb");
 
 const app = express();
 const sessionStore = new MongoDBStore({
@@ -29,6 +30,24 @@ app.use(
     store: sessionStore,
   })
 );
+
+app.use(async function (req, res, next) {
+  const user = req.session.user;
+  const isAuthenticated = req.session.isAuthenticated;
+
+  if (!user || !isAuthenticated) {
+    return next();
+  }
+
+  const { isAdmin } = await db
+    .getDb()
+    .collection("users")
+    .findOne({ _id: new ObjectId(user.id) });
+  res.locals.isAdmin = isAdmin;
+  res.locals.a = isAuthenticated;
+  next();
+});
+
 app.use(demoRoutes);
 
 app.use(function (error, req, res, next) {
