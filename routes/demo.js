@@ -2,6 +2,7 @@ const express = require("express");
 const bcrypt = require("bcryptjs");
 
 const db = require("../data/database");
+const { ObjectId } = require("mongodb");
 
 const router = express.Router();
 
@@ -41,7 +42,7 @@ router.post("/signup", async function (req, res) {
     !confirmEmail ||
     password.trim() < 6 ||
     email !== confirmEmail ||
-    !confirmEmail.includes("@")
+    !confirmEmail.includesn("@")
   ) {
     req.session.inputData = {
       hasError: true,
@@ -107,11 +108,29 @@ router.post("/login", async function (req, res) {
   });
 });
 
-router.get("/admin", function (req, res) {
+router.get("/admin", async function (req, res) {
   if (!req.session.isAuthenticated) {
     return res.status(401).render("401");
   }
+
+  const user = await db
+    .getDb()
+    .collection("users")
+    .findOne({ _id: ObjectId.createFromHexString(req.session.user.id) });
+  console.log("user", user);
+
+  if (!user || !user.isAdmin) {
+    return res.status(403).render("403");
+  }
   res.render("admin");
+});
+
+router.get("/profile", function (req, res) {
+  if (!req.session.isAuthenticated) {
+    return res.status(401).render("401");
+  }
+
+  res.render("profile");
 });
 
 router.post("/logout", function (req, res) {
